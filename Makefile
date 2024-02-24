@@ -1,13 +1,13 @@
 CC = gcc
-DEFAULT_FLAGS = -o
+CC_FLAGS = -g -o
+GH_DIR=~/.local/bin/gh
 
-run_tests:
-	$(CC) $(DEFAULT_FLAGS) tests.out ./tests/*.c -l cmocka
-	./tests.out
-	rm ./tests.out
+build_tests:
+	$(CC) $(CC_FLAGS) tests.out ./tests/*.c ./src/gh.c -lcmocka -Wl,--wrap=find_git_config -DTESTING
 
 install:
-	$(CC) $(DEFAULT_FLAGS) gh.out ./src/*.c
+	$(CC) $(CC_FLAGS) $(GH_DIR) ./src/*.c
 
 clean:
-	rm ./*.out
+	rm -f ./*.out
+	rm -f $(GH_DIR)
