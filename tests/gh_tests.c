@@ -42,11 +42,20 @@ static void test_home_instruction_generation(void **state) {
     assert_string_equal(home.instruction, "firefox --new-tab github.com/fakeuser/fakerepo");
 }
 
+static void test_help_instruction_generation(void **state) {
+    struct Prompt help = { HELP_CMD };
+
+    add_instruction(&help);
+
+    assert_string_equal(help.instruction, "man gh");
+}
+
 int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_parsing_prompt_with_no_flags),
         cmocka_unit_test(test_parsing_prompt_with_help_flags),
-        cmocka_unit_test(test_home_instruction_generation)
+        cmocka_unit_test(test_home_instruction_generation),
+        cmocka_unit_test(test_help_instruction_generation)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

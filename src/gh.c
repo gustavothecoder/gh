@@ -22,7 +22,7 @@ struct Prompt parse_prompt(int argc, char *argv[]) {
 
 static int parse_cmd(char *arg[]) {
     int result;
-    if (strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help"))
+    if (strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help") == 0)
         result = HELP_CMD;
     return result;
 }
@@ -34,6 +34,9 @@ static int parse_opt(char *arg[]) {
 
 void add_instruction(struct Prompt *prompt) {
     switch (prompt->cmd) {
+    case HELP_CMD:
+        strcpy(prompt->instruction, "man gh");
+        break;
     case HOME_CMD:
         char git_config_path[MAX_STR_SIZE];
         getcwd((char *)&git_config_path, MAX_STR_SIZE);
