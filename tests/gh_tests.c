@@ -1,6 +1,17 @@
 #include "_cmocka.h"
 #include "../src/gh.h"
 
+static void test_parsing_invalid_prompt(void **state) {
+    int argc = 2;
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "--invalid";
+
+    struct Prompt result = parse_prompt(argc, fake_argv);
+
+    assert_int_equal(result.cmd, INVALID_CMD);
+}
+
 static void test_parsing_prompt_with_no_flags(void **state) {
     char *fake_argv[1];
     fake_argv[0] = "gh";
@@ -68,6 +79,7 @@ static void test_help_instruction_generation(void **state) {
 
 int main(void) {
     const struct CMUnitTest tests[] = {
+        cmocka_unit_test(test_parsing_invalid_prompt),
         cmocka_unit_test(test_parsing_prompt_with_no_flags),
         cmocka_unit_test(test_parsing_prompt_with_help_flags),
         cmocka_unit_test(test_parsing_prompt_with_repo_flags),

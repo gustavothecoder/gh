@@ -20,13 +20,16 @@ struct Prompt parse_prompt(int argc, char *argv[]) {
     return result;
 }
 
-// TODO: handle invalid commands
 static int parse_cmd(char *arg[]) {
     int result;
+
     if (strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help") == 0)
         result = HELP_CMD;
     else if (strcmp(*arg, "-r") == 0 || strcmp(*arg, "--repo") == 0)
         result = REPO_CMD;
+    else
+        result = INVALID_CMD;
+
     return result;
 }
 
