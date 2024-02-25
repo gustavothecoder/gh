@@ -7,7 +7,7 @@
 
 #define MAX_CMD_OPTS 1
 #define DEFAULT_CMD 1
-#define HOME_CMD 1
+#define REPO_CMD 1
 #define HELP_CMD 2
 
 #define FIREFOX_INSTRUCTOR 1
