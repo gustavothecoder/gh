@@ -44,6 +44,7 @@ void add_instruction(struct Prompt *prompt) {
         strcpy(prompt->instruction, "man gh");
         break;
     case REPO_CMD:
+        if (0) {}; // Just to avoid CCLS expected expression error
         char git_config_path[MAX_STR_SIZE];
         getcwd((char *)&git_config_path, MAX_STR_SIZE);
         strcat(git_config_path, "/.git/config");
