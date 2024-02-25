@@ -49,8 +49,11 @@ void add_instruction(struct Prompt *prompt) {
         getcwd((char *)&git_config_path, MAX_STR_SIZE);
         strcat(git_config_path, "/.git/config");
 
-        // TODO: handle the error case when file is not found
         FILE *git_config = find_git_config(git_config_path);
+        if (git_config == NULL) {
+            strcpy(prompt->error, "Repository configuration not found.");
+            break;
+        }
 
         char current_line[MAX_STR_SIZE], remote[MAX_STR_SIZE];
         char *remote_section;

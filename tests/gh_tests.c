@@ -69,6 +69,16 @@ static void test_repo_instruction_generation(void **state) {
     assert_string_equal(repo.instruction, "firefox --new-tab github.com/fakeuser/fakerepo");
 }
 
+static void test_repo_instruction_generation_errors(void **state) {
+    struct Prompt repo = { REPO_CMD };
+    will_return(__wrap_find_git_config, NULL);
+
+    add_instruction(&repo);
+
+    assert_string_equal(repo.instruction, "\0");
+    assert_string_equal(repo.error, "Repository configuration not found.");
+}
+
 static void test_help_instruction_generation(void **state) {
     struct Prompt help = { HELP_CMD };
 
@@ -84,6 +94,7 @@ int main(void) {
         cmocka_unit_test(test_parsing_prompt_with_help_flags),
         cmocka_unit_test(test_parsing_prompt_with_repo_flags),
         cmocka_unit_test(test_repo_instruction_generation),
+        cmocka_unit_test(test_repo_instruction_generation_errors),
         cmocka_unit_test(test_help_instruction_generation)
     };
 

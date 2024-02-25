@@ -18,6 +18,7 @@ struct Prompt {
     int cmd;
     int opts[MAX_CMD_OPTS];
     char instruction[MAX_STR_SIZE];
+    char error[MAX_STR_SIZE];
 };
 
 struct Prompt parse_prompt(int argc, char *argv[]);

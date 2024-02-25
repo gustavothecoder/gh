@@ -8,6 +8,11 @@ int main(int argc, char *argv[]) {
     }
 
     add_instruction(&prompt);
+    if (prompt.error[0] != '\0') {
+        printf("%s\n", prompt.error);
+        return EXIT_FAILURE;
+    }
+
     system(prompt.instruction);
     return EXIT_SUCCESS;
 }
