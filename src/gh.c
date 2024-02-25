@@ -68,15 +68,14 @@ void add_instruction(struct Prompt *prompt) {
 
         fclose(git_config);
 
-        // TODO: support HTTPS remotes
-        // TODO: check if is a valid github.com URL
-        size_t remote_sz = strlen(remote);
-        remote[remote_sz - 5] = '\0';
-        char *colon = memchr(remote, ':', remote_sz);
-        memset(colon, '/', 1);
-        memmove(remote, remote+11, 30);
+        char *remote_url = strstr(remote, "github.com");
+        size_t remote_sz = strlen(remote_url);
+        remote_url[remote_sz - 5] = '\0';
+        char *colon = memchr(remote_url, ':', remote_sz);
+        if (colon != NULL)
+            memset(colon, '/', 1);
         char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
-        strcat(firefox_bin_cmd, remote);
+        strcat(firefox_bin_cmd, remote_url);
         strcpy(prompt->instruction, firefox_bin_cmd);
 
         break;

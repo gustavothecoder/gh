@@ -57,7 +57,7 @@ FILE *__wrap_find_git_config(const char *path) {
     return (FILE *)mock();
 }
 
-static void test_repo_instruction_generation(void **state) {
+static void test_repo_instruction_generation_git_remote(void **state) {
     struct Prompt repo = { REPO_CMD };
     char fake_config_path[MAX_STR_SIZE];
     getcwd((char *)&fake_config_path, MAX_STR_SIZE);
@@ -67,6 +67,18 @@ static void test_repo_instruction_generation(void **state) {
     add_instruction(&repo);
 
     assert_string_equal(repo.instruction, "firefox --new-tab github.com/fakeuser/fakerepo");
+}
+
+static void test_repo_instruction_generation_https_remote(void **state) {
+    struct Prompt repo = { REPO_CMD };
+    char fake_config_path[MAX_STR_SIZE];
+    getcwd((char *)&fake_config_path, MAX_STR_SIZE);
+    strcat(fake_config_path, "/tests/fake_https_config");
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+
+    add_instruction(&repo);
+
+    assert_string_equal(repo.instruction, "firefox --new-tab github.com/gustavothecoder/gh");
 }
 
 static void test_repo_instruction_generation_errors(void **state) {
@@ -93,7 +105,8 @@ int main(void) {
         cmocka_unit_test(test_parsing_prompt_with_no_flags),
         cmocka_unit_test(test_parsing_prompt_with_help_flags),
         cmocka_unit_test(test_parsing_prompt_with_repo_flags),
-        cmocka_unit_test(test_repo_instruction_generation),
+        cmocka_unit_test(test_repo_instruction_generation_git_remote),
+        cmocka_unit_test(test_repo_instruction_generation_https_remote),
         cmocka_unit_test(test_repo_instruction_generation_errors),
         cmocka_unit_test(test_help_instruction_generation)
     };
