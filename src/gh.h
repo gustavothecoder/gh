@@ -23,4 +23,4 @@ struct Prompt {
 
 struct Prompt parse_prompt(int argc, char *argv[]);
 void add_instruction(struct Prompt *prompt);
-FILE *find_git_config(const char *path);
+FILE *find_git_config();

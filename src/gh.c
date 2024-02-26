@@ -2,6 +2,10 @@
 
 static int parse_cmd(char *arg[]);
 static int parse_opt(char *arg[]);
+static int generate_git_remote_url(char *url);
+static void find_git_remote_url(FILE *git_config, char *buff);
+static void adapt_git_remote_url(char *url);
+static char *generate_firefox_instruction(char *url);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -27,6 +31,8 @@ static int parse_cmd(char *arg[]) {
         result = HELP_CMD;
     else if (strcmp(*arg, "-r") == 0 || strcmp(*arg, "--repo") == 0)
         result = REPO_CMD;
+    else if (strcmp(*arg, "-p") == 0 || strcmp(*arg, "--prs") == 0)
+        result = PR_CMD;
     else
         result = INVALID_CMD;
 
@@ -45,45 +51,63 @@ void add_instruction(struct Prompt *prompt) {
         break;
     case REPO_CMD:
         if (0) {}; // Just to avoid CCLS expected expression error
-        char git_config_path[MAX_STR_SIZE];
-        getcwd((char *)&git_config_path, MAX_STR_SIZE);
-        strcat(git_config_path, "/.git/config");
 
-        FILE *git_config = find_git_config(git_config_path);
-        if (git_config == NULL) {
+        char remote_url[MAX_STR_SIZE];
+        int success = generate_git_remote_url(remote_url);
+        if (success) {
+            strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
+        } else {
             strcpy(prompt->error, "Repository configuration not found.");
-            break;
         }
-
-        char current_line[MAX_STR_SIZE], remote[MAX_STR_SIZE];
-        char *remote_section;
-        while (fgets(current_line, MAX_STR_SIZE, git_config)) {
-            remote_section = strstr(current_line, "[remote \"origin\"]");
-
-            if (remote_section != NULL) {
-                fgets(remote, MAX_STR_SIZE, git_config);
-                break;
-            }
-        }
-
-        fclose(git_config);
-
-        char *remote_url = strstr(remote, "github.com");
-        size_t remote_sz = strlen(remote_url);
-        remote_url[remote_sz - 5] = '\0';
-        char *colon = memchr(remote_url, ':', remote_sz);
-        if (colon != NULL)
-            memset(colon, '/', 1);
-        char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
-        strcat(firefox_bin_cmd, remote_url);
-        strcpy(prompt->instruction, firefox_bin_cmd);
 
         break;
     }
 }
 
+static int generate_git_remote_url(char *url) {
+    FILE *git_config = find_git_config();
+    if (git_config != NULL) {
+        find_git_remote_url(git_config, url);
+        adapt_git_remote_url(url);
+        fclose(git_config);
+        return 1;
+    }
+    return 0;
+}
+
 #ifndef TESTING
-FILE *find_git_config(const char *path) {
-    return fopen(path, "r");
+FILE *find_git_config() {
+    char git_config_path[MAX_STR_SIZE];
+    getcwd((char *)&git_config_path, MAX_STR_SIZE);
+    strcat(git_config_path, "/.git/config");
+    return fopen(git_config_path, "r");
 }
 #endif
+
+static void find_git_remote_url(FILE *git_config, char *buff) {
+    char current_line[MAX_STR_SIZE], remote[MAX_STR_SIZE];
+    char *remote_section;
+    while (fgets(current_line, MAX_STR_SIZE, git_config)) {
+        remote_section = strstr(current_line, "[remote \"origin\"]");
+
+        if (remote_section != NULL) {
+            fgets(remote, MAX_STR_SIZE, git_config);
+            break;
+        }
+    }
+
+    strcpy(buff, strstr(remote, "github.com"));
+}
+
+static void adapt_git_remote_url(char *url) {
+    size_t remote_sz = strlen(url);
+    url[remote_sz - 5] = '\0';
+    char *colon = memchr(url, ':', remote_sz);
+    if (colon != NULL)
+        memset(colon, '/', 1);
+}
+
+static char *generate_firefox_instruction(char *url) {
+    char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
+    return strcat(firefox_bin_cmd, url);
+}
