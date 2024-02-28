@@ -45,22 +45,21 @@ static int parse_opt(char *arg[]) {
 }
 
 void add_instruction(struct Prompt *prompt) {
-    switch (prompt->cmd) {
-    case HELP_CMD:
+    if (prompt->cmd == HELP_CMD) {
         strcpy(prompt->instruction, "man gh");
-        break;
-    case REPO_CMD:
-        if (0) {}; // Just to avoid CCLS expected expression error
+        return;
+    }
 
-        char remote_url[MAX_STR_SIZE];
-        int success = generate_git_remote_url(remote_url);
-        if (success) {
-            strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
-        } else {
-            strcpy(prompt->error, "Repository configuration not found.");
-        }
+    char remote_url[MAX_STR_SIZE];
+    int success = generate_git_remote_url(remote_url);
+    if (!success) {
+        strcpy(prompt->error, "Repository configuration not found.");
+        return;
+    }
+    strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
 
-        break;
+    if (prompt->cmd == PR_CMD) {
+        strcat(prompt->instruction, "/pulls");
     }
 }
 
