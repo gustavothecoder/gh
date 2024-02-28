@@ -29,9 +29,9 @@ static int parse_cmd(char *arg[]) {
 
     if (strcmp(*arg, "-h") == 0 || strcmp(*arg, "--help") == 0)
         result = HELP_CMD;
-    else if (strcmp(*arg, "-r") == 0 || strcmp(*arg, "--repo") == 0)
+    else if (strcmp(*arg, "repo") == 0)
         result = REPO_CMD;
-    else if (strcmp(*arg, "-p") == 0 || strcmp(*arg, "--prs") == 0)
+    else if (strcmp(*arg, "pulls") == 0)
         result = PR_CMD;
     else
         result = INVALID_CMD;

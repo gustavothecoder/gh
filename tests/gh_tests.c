@@ -21,7 +21,7 @@ static void test_parsing_prompt_with_no_flags(void **state) {
     assert_int_equal(result.cmd, REPO_CMD);
 }
 
-static void test_parsing_prompt_with_help_flags(void **state) {
+static void test_parsing_prompt_with_help_options(void **state) {
     int argc = 2;
     char *fake_argv1[argc];
     fake_argv1[0] = "gh";
@@ -37,36 +37,37 @@ static void test_parsing_prompt_with_help_flags(void **state) {
     assert_int_equal(result2.cmd, HELP_CMD);
 }
 
-static void test_parsing_prompt_with_repo_flags(void **state) {
+static void test_parsing_prompt_with_repo_cmd(void **state) {
     int argc = 2;
-    char *fake_argv1[argc];
-    fake_argv1[0] = "gh";
-    fake_argv1[1] = "-r";
-    char *fake_argv2[argc];
-    fake_argv2[0] = "gh";
-    fake_argv2[1] = "--repo";
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "repo";
 
-    struct Prompt result1 = parse_prompt(argc, fake_argv1);
-    struct Prompt result2 = parse_prompt(argc, fake_argv2);
+    struct Prompt result = parse_prompt(argc, fake_argv);
 
-    assert_int_equal(result1.cmd, REPO_CMD);
-    assert_int_equal(result2.cmd, REPO_CMD);
+    assert_int_equal(result.cmd, REPO_CMD);
 }
 
-static void test_parsing_prompt_with_pr_flags(void **state) {
+static void test_parsing_prompt_with_pulls_cmd(void **state) {
     int argc = 2;
-    char *fake_argv1[argc];
-    fake_argv1[0] = "gh";
-    fake_argv1[1] = "-p";
-    char *fake_argv2[argc];
-    fake_argv2[0] = "gh";
-    fake_argv2[1] = "--prs";
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "pulls";
 
-    struct Prompt result1 = parse_prompt(argc, fake_argv1);
-    struct Prompt result2 = parse_prompt(argc, fake_argv2);
+    struct Prompt result = parse_prompt(argc, fake_argv);
 
-    assert_int_equal(result1.cmd, PR_CMD);
-    assert_int_equal(result2.cmd, PR_CMD);
+    assert_int_equal(result.cmd, PR_CMD);
+}
+
+static void test_parsing_prompt_with_pulls_options(void **state) {
+    int argc = 2;
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "pulls";
+
+    struct Prompt result = parse_prompt(argc, fake_argv);
+
+    assert_int_equal(result.cmd, PR_CMD);
 }
 
 FILE *__wrap_find_git_config() {
@@ -131,9 +132,10 @@ int main(void) {
     const struct CMUnitTest tests[] = {
         cmocka_unit_test(test_parsing_invalid_prompt),
         cmocka_unit_test(test_parsing_prompt_with_no_flags),
-        cmocka_unit_test(test_parsing_prompt_with_help_flags),
-        cmocka_unit_test(test_parsing_prompt_with_repo_flags),
-        cmocka_unit_test(test_parsing_prompt_with_pr_flags),
+        cmocka_unit_test(test_parsing_prompt_with_help_options),
+        cmocka_unit_test(test_parsing_prompt_with_repo_cmd),
+        cmocka_unit_test(test_parsing_prompt_with_pulls_cmd),
+        cmocka_unit_test(test_parsing_prompt_with_pulls_options),
         cmocka_unit_test(test_repo_instruction_generation_git_remote),
         cmocka_unit_test(test_repo_instruction_generation_https_remote),
         cmocka_unit_test(test_repo_instruction_generation_errors),
