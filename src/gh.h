@@ -15,11 +15,18 @@
 #define FIREFOX_INSTRUCTOR 1
 #define TERM_INSTRUCTOR 2
 
+#define AUTHOR_OPT 0
+
+struct Option {
+    char key[MAX_STR_SIZE];
+    char value[MAX_STR_SIZE];
+};
+
 struct Prompt {
     int cmd;
-    int opts[MAX_CMD_OPTS];
     char instruction[MAX_STR_SIZE];
     char error[MAX_STR_SIZE];
+    struct Option opts[MAX_CMD_OPTS];
 };
 
 struct Prompt parse_prompt(int argc, char *argv[]);

@@ -21,6 +21,7 @@ static void test_parsing_prompt_with_no_flags(void **state) {
     assert_int_equal(result.cmd, REPO_CMD);
 }
 
+// TODO: convert this to a real command
 static void test_parsing_prompt_with_help_options(void **state) {
     int argc = 2;
     char *fake_argv1[argc];
@@ -49,25 +50,17 @@ static void test_parsing_prompt_with_repo_cmd(void **state) {
 }
 
 static void test_parsing_prompt_with_pulls_cmd(void **state) {
-    int argc = 2;
+    int argc = 3;
     char *fake_argv[argc];
     fake_argv[0] = "gh";
     fake_argv[1] = "pulls";
+    fake_argv[2] = "--author=me";
 
     struct Prompt result = parse_prompt(argc, fake_argv);
 
     assert_int_equal(result.cmd, PR_CMD);
-}
-
-static void test_parsing_prompt_with_pulls_options(void **state) {
-    int argc = 2;
-    char *fake_argv[argc];
-    fake_argv[0] = "gh";
-    fake_argv[1] = "pulls";
-
-    struct Prompt result = parse_prompt(argc, fake_argv);
-
-    assert_int_equal(result.cmd, PR_CMD);
+    assert_string_equal(result.opts[AUTHOR_OPT].key, "--author");
+    assert_string_equal(result.opts[AUTHOR_OPT].value, "me");
 }
 
 FILE *__wrap_find_git_config() {
@@ -125,7 +118,25 @@ static void test_pr_instruction_generation(void **state) {
 
     add_instruction(&pr);
 
-    assert_string_equal(pr.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls");
+    assert_string_equal(pr.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open");
+}
+
+static void test_pr_instruction_generation_with_author_opt(void **state) {
+    // Arrange
+    struct Prompt pr = { PR_CMD };
+    strcpy(pr.opts[AUTHOR_OPT].key, "--author");
+    strcpy(pr.opts[AUTHOR_OPT].value, "@me");
+
+    char fake_config_path[MAX_STR_SIZE];
+    getcwd((char *)&fake_config_path, MAX_STR_SIZE);
+    strcat(fake_config_path, "/tests/fake_git_config");
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+
+    // Act
+    add_instruction(&pr);
+
+    // Assert
+    assert_string_equal(pr.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open+author:@me");
 }
 
 int main(void) {
@@ -135,12 +146,12 @@ int main(void) {
         cmocka_unit_test(test_parsing_prompt_with_help_options),
         cmocka_unit_test(test_parsing_prompt_with_repo_cmd),
         cmocka_unit_test(test_parsing_prompt_with_pulls_cmd),
-        cmocka_unit_test(test_parsing_prompt_with_pulls_options),
         cmocka_unit_test(test_repo_instruction_generation_git_remote),
         cmocka_unit_test(test_repo_instruction_generation_https_remote),
         cmocka_unit_test(test_repo_instruction_generation_errors),
         cmocka_unit_test(test_help_instruction_generation),
-        cmocka_unit_test(test_pr_instruction_generation)
+        cmocka_unit_test(test_pr_instruction_generation),
+        cmocka_unit_test(test_pr_instruction_generation_with_author_opt)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

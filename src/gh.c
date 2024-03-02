@@ -1,11 +1,12 @@
 #include "gh.h"
 
 static int parse_cmd(char *arg[]);
-static int parse_opt(char *arg[]);
+static struct Option parse_opt(char *opt);
 static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
 static void adapt_git_remote_url(char *url);
 static char *generate_firefox_instruction(char *url);
+static void filter_prs_by_author(struct Prompt *p);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -16,7 +17,7 @@ struct Prompt parse_prompt(int argc, char *argv[]) {
         if (i == 1) {
             result.cmd = parse_cmd(&argv[i]);
         } else {
-            result.opts[opt_i] = parse_opt(&argv[i]);
+            result.opts[opt_i] = parse_opt(argv[i]);
             opt_i++;
         }
     }
@@ -39,9 +40,20 @@ static int parse_cmd(char *arg[]) {
     return result;
 }
 
-static int parse_opt(char *arg[]) {
-    int result;
-    return result;
+static struct Option parse_opt(char *opt) {
+    struct Option o;
+
+    char received_opt[MAX_STR_SIZE];
+    strcpy(received_opt, opt);
+    size_t opt_sz = strlen(received_opt);
+    char *value_with_sep = memchr(received_opt, '=', opt_sz);
+    char *only_value = value_with_sep+1;
+    strcpy(o.value, only_value);
+
+    memset(value_with_sep, '\0', 1);
+    strcpy(o.key, received_opt);
+
+    return o;
 }
 
 void add_instruction(struct Prompt *prompt) {
@@ -59,7 +71,8 @@ void add_instruction(struct Prompt *prompt) {
     strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
 
     if (prompt->cmd == PR_CMD) {
-        strcat(prompt->instruction, "/pulls");
+        strcat(prompt->instruction, "/pulls?q=is:pr+is:open");
+        filter_prs_by_author(prompt);
     }
 }
 
@@ -109,4 +122,13 @@ static void adapt_git_remote_url(char *url) {
 static char *generate_firefox_instruction(char *url) {
     char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
     return strcat(firefox_bin_cmd, url);
+}
+
+static void filter_prs_by_author(struct Prompt *p) {
+    if (strcmp(p->opts[AUTHOR_OPT].key, "--author") != 0) return;
+
+    char author_param[MAX_STR_SIZE];
+    strcpy(author_param, "+author:");
+    strcat(author_param, p->opts[AUTHOR_OPT].value);
+    strcat(p->instruction, author_param);
 }
