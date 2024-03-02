@@ -21,21 +21,15 @@ static void test_parsing_prompt_with_no_flags(void **state) {
     assert_int_equal(result.cmd, REPO_CMD);
 }
 
-// TODO: convert this to a real command
 static void test_parsing_prompt_with_help_options(void **state) {
     int argc = 2;
-    char *fake_argv1[argc];
-    fake_argv1[0] = "gh";
-    fake_argv1[1] = "-h";
-    char *fake_argv2[argc];
-    fake_argv2[0] = "gh";
-    fake_argv2[1] = "--help";
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "help";
 
-    struct Prompt result1 = parse_prompt(argc, fake_argv1);
-    struct Prompt result2 = parse_prompt(argc, fake_argv2);
+    struct Prompt result = parse_prompt(argc, fake_argv);
 
-    assert_int_equal(result1.cmd, HELP_CMD);
-    assert_int_equal(result2.cmd, HELP_CMD);
+    assert_int_equal(result.cmd, HELP_CMD);
 }
 
 static void test_parsing_prompt_with_repo_cmd(void **state) {
