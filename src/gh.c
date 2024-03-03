@@ -6,7 +6,9 @@ static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
 static void adapt_git_remote_url(char *url);
 static char *generate_firefox_instruction(char *url);
-static void filter_prs_by_author(struct Prompt *p);
+static void filter_open_prs(struct Prompt *p);
+static void filter_closed_prs(struct Prompt *p);
+static void filter_prs_by_author(struct Prompt *p, char *author);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -46,11 +48,18 @@ static struct Option parse_opt(char *opt) {
     char received_opt[MAX_STR_SIZE];
     strcpy(received_opt, opt);
     size_t opt_sz = strlen(received_opt);
-    char *value_with_sep = memchr(received_opt, '=', opt_sz);
-    char *only_value = value_with_sep+1;
-    strcpy(o.value, only_value);
 
-    memset(value_with_sep, '\0', 1);
+    char *value_with_sep = memchr(received_opt, '=', opt_sz);
+    if (value_with_sep != NULL) {
+        char *only_value = value_with_sep+1;
+        strcpy(o.value, only_value);
+        char *break_line = memchr(o.value, '\n', strlen(o.value));
+        if (break_line != NULL)
+            memset(break_line, '\0', 1);
+
+        memset(value_with_sep, '\0', 1);
+    }
+
     strcpy(o.key, received_opt);
 
     return o;
@@ -70,9 +79,14 @@ void add_instruction(struct Prompt *prompt) {
     }
     strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
 
-    if (prompt->cmd == PR_CMD) {
-        strcat(prompt->instruction, "/pulls?q=is:pr+is:open");
-        filter_prs_by_author(prompt);
+    if (prompt->cmd == PR_CMD) strcat(prompt->instruction, "/pulls?q=is:pr");
+
+    if (prompt->opts[0].key[0] != '\0') {
+        for (int i = 0; i < MAX_CMD_OPTS; i++) {
+            if (strcmp(prompt->opts[i].key, "--open") == 0) filter_open_prs(prompt);
+            else if (strcmp(prompt->opts[i].key, "--closed") == 0) filter_closed_prs(prompt);
+            else if (strcmp(prompt->opts[i].key, "--author") == 0) filter_prs_by_author(prompt, prompt->opts[i].value);
+        }
     }
 }
 
@@ -124,11 +138,17 @@ static char *generate_firefox_instruction(char *url) {
     return strcat(firefox_bin_cmd, url);
 }
 
-static void filter_prs_by_author(struct Prompt *p) {
-    if (strcmp(p->opts[AUTHOR_OPT].key, "--author") != 0) return;
+static void filter_open_prs(struct Prompt *p) {
+    strcat(p->instruction, "+is:open");
+}
 
+static void filter_closed_prs(struct Prompt *p) {
+    strcat(p->instruction, "+is:closed");
+}
+
+static void filter_prs_by_author(struct Prompt *p, char *author) {
     char author_param[MAX_STR_SIZE];
     strcpy(author_param, "+author:");
-    strcat(author_param, p->opts[AUTHOR_OPT].value);
+    strcat(author_param, author);
     strcat(p->instruction, author_param);
 }

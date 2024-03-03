@@ -44,17 +44,19 @@ static void test_parsing_prompt_with_repo_cmd(void **state) {
 }
 
 static void test_parsing_prompt_with_pulls_cmd(void **state) {
-    int argc = 3;
+    int argc = 4;
     char *fake_argv[argc];
     fake_argv[0] = "gh";
     fake_argv[1] = "pulls";
-    fake_argv[2] = "--author=me";
+    fake_argv[2] = "--author=me\n";
+    fake_argv[3] = "--closed";
 
     struct Prompt result = parse_prompt(argc, fake_argv);
 
     assert_int_equal(result.cmd, PR_CMD);
-    assert_string_equal(result.opts[AUTHOR_OPT].key, "--author");
-    assert_string_equal(result.opts[AUTHOR_OPT].value, "me");
+    assert_string_equal(result.opts[0].key, "--author");
+    assert_string_equal(result.opts[0].value, "me");
+    assert_string_equal(result.opts[1].key, "--closed");
 }
 
 FILE *__wrap_find_git_config() {
@@ -104,33 +106,36 @@ static void test_help_instruction_generation(void **state) {
 }
 
 static void test_pr_instruction_generation(void **state) {
-    struct Prompt pr = { PR_CMD };
-    char fake_config_path[MAX_STR_SIZE];
-    getcwd((char *)&fake_config_path, MAX_STR_SIZE);
-    strcat(fake_config_path, "/tests/fake_git_config");
-    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
-
-    add_instruction(&pr);
-
-    assert_string_equal(pr.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open");
-}
-
-static void test_pr_instruction_generation_with_author_opt(void **state) {
     // Arrange
-    struct Prompt pr = { PR_CMD };
-    strcpy(pr.opts[AUTHOR_OPT].key, "--author");
-    strcpy(pr.opts[AUTHOR_OPT].value, "@me");
-
     char fake_config_path[MAX_STR_SIZE];
     getcwd((char *)&fake_config_path, MAX_STR_SIZE);
     strcat(fake_config_path, "/tests/fake_git_config");
-    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+
+    struct Prompt pr_without_options = { PR_CMD };
+
+    struct Prompt pr_with_open = { PR_CMD };
+    strcpy(pr_with_open.opts[0].key, "--open");
+
+    struct Prompt pr_with_author_and_closed = { PR_CMD };
+    strcpy(pr_with_author_and_closed.opts[0].key, "--closed");
+    strcpy(pr_with_author_and_closed.opts[1].key, "--author");
+    strcpy(pr_with_author_and_closed.opts[1].value, "@me");
 
     // Act
-    add_instruction(&pr);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&pr_without_options);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&pr_with_open);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&pr_with_author_and_closed);
 
     // Assert
-    assert_string_equal(pr.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open+author:@me");
+    assert_string_equal(pr_without_options.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr");
+    assert_string_equal(pr_with_open.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open");
+    assert_string_equal(
+                        pr_with_author_and_closed.instruction,
+                        "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:closed+author:@me"
+                        );
 }
 
 int main(void) {
@@ -144,8 +149,7 @@ int main(void) {
         cmocka_unit_test(test_repo_instruction_generation_https_remote),
         cmocka_unit_test(test_repo_instruction_generation_errors),
         cmocka_unit_test(test_help_instruction_generation),
-        cmocka_unit_test(test_pr_instruction_generation),
-        cmocka_unit_test(test_pr_instruction_generation_with_author_opt)
+        cmocka_unit_test(test_pr_instruction_generation)
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);
