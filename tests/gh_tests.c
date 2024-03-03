@@ -121,6 +121,9 @@ static void test_pr_instruction_generation(void **state) {
     strcpy(pr_with_author_and_closed.opts[1].key, "--author");
     strcpy(pr_with_author_and_closed.opts[1].value, "@me");
 
+    struct Prompt pr_with_to_review = { PR_CMD };
+    strcpy(pr_with_to_review.opts[0].key, "--to-review");
+
     // Act
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&pr_without_options);
@@ -128,6 +131,8 @@ static void test_pr_instruction_generation(void **state) {
     add_instruction(&pr_with_open);
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&pr_with_author_and_closed);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&pr_with_to_review);
 
     // Assert
     assert_string_equal(pr_without_options.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr");
@@ -135,6 +140,10 @@ static void test_pr_instruction_generation(void **state) {
     assert_string_equal(
                         pr_with_author_and_closed.instruction,
                         "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:closed+author:@me"
+                        );
+    assert_string_equal(
+                        pr_with_to_review.instruction,
+                        "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open+user-review-requested:@me"
                         );
 }
 

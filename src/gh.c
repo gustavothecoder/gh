@@ -9,6 +9,7 @@ static char *generate_firefox_instruction(char *url);
 static void filter_open_prs(struct Prompt *p);
 static void filter_closed_prs(struct Prompt *p);
 static void filter_prs_by_author(struct Prompt *p, char *author);
+static void filter_prs_to_review(struct Prompt *p);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -83,9 +84,16 @@ void add_instruction(struct Prompt *prompt) {
 
     if (prompt->opts[0].key[0] != '\0') {
         for (int i = 0; i < MAX_CMD_OPTS; i++) {
-            if (strcmp(prompt->opts[i].key, "--open") == 0) filter_open_prs(prompt);
-            else if (strcmp(prompt->opts[i].key, "--closed") == 0) filter_closed_prs(prompt);
-            else if (strcmp(prompt->opts[i].key, "--author") == 0) filter_prs_by_author(prompt, prompt->opts[i].value);
+            if (strcmp(prompt->opts[i].key, "--open") == 0) {
+                filter_open_prs(prompt);
+            } else if (strcmp(prompt->opts[i].key, "--closed") == 0) {
+                filter_closed_prs(prompt);
+            } else if (strcmp(prompt->opts[i].key, "--author") == 0) {
+                filter_prs_by_author(prompt, prompt->opts[i].value);
+            } else if (strcmp(prompt->opts[i].key, "--to-review") == 0) {
+                filter_open_prs(prompt);
+                filter_prs_to_review(prompt);
+            }
         }
     }
 }
@@ -151,4 +159,8 @@ static void filter_prs_by_author(struct Prompt *p, char *author) {
     strcpy(author_param, "+author:");
     strcat(author_param, author);
     strcat(p->instruction, author_param);
+}
+
+static void filter_prs_to_review(struct Prompt *p) {
+    strcat(p->instruction, "+user-review-requested:@me");
 }
