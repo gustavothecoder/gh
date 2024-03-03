@@ -6,6 +6,7 @@ static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
 static void adapt_git_remote_url(char *url);
 static char *generate_firefox_instruction(char *url);
+static void handle_pulls_options(struct Prompt *p);
 static void filter_open_prs(struct Prompt *p);
 static void filter_closed_prs(struct Prompt *p);
 static void filter_prs_by_author(struct Prompt *p, char *author);
@@ -36,7 +37,9 @@ static int parse_cmd(char *arg[]) {
     else if (strcmp(*arg, "repo") == 0)
         result = REPO_CMD;
     else if (strcmp(*arg, "pulls") == 0)
-        result = PR_CMD;
+        result = PULLS_CMD;
+    else if (strcmp(*arg, "newpr") == 0)
+        result = NEWPR_CMD;
     else
         result = INVALID_CMD;
 
@@ -80,21 +83,11 @@ void add_instruction(struct Prompt *prompt) {
     }
     strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
 
-    if (prompt->cmd == PR_CMD) strcat(prompt->instruction, "/pulls?q=is:pr");
+    if (prompt->cmd == PULLS_CMD) strcat(prompt->instruction, "/pulls?q=is:pr");
+    else if (prompt->cmd == NEWPR_CMD) strcat(prompt->instruction, "/compare");
 
     if (prompt->opts[0].key[0] != '\0') {
-        for (int i = 0; i < MAX_CMD_OPTS; i++) {
-            if (strcmp(prompt->opts[i].key, "--open") == 0) {
-                filter_open_prs(prompt);
-            } else if (strcmp(prompt->opts[i].key, "--closed") == 0) {
-                filter_closed_prs(prompt);
-            } else if (strcmp(prompt->opts[i].key, "--author") == 0) {
-                filter_prs_by_author(prompt, prompt->opts[i].value);
-            } else if (strcmp(prompt->opts[i].key, "--to-review") == 0) {
-                filter_open_prs(prompt);
-                filter_prs_to_review(prompt);
-            }
-        }
+        handle_pulls_options(prompt);
     }
 }
 
@@ -144,6 +137,23 @@ static void adapt_git_remote_url(char *url) {
 static char *generate_firefox_instruction(char *url) {
     char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
     return strcat(firefox_bin_cmd, url);
+}
+
+static void handle_pulls_options(struct Prompt *p) {
+    if (p->cmd != PULLS_CMD) return;
+
+    for (int i = 0; i < MAX_CMD_OPTS; i++) {
+        if (strcmp(p->opts[i].key, "--open") == 0) {
+            filter_open_prs(p);
+        } else if (strcmp(p->opts[i].key, "--closed") == 0) {
+            filter_closed_prs(p);
+        } else if (strcmp(p->opts[i].key, "--author") == 0) {
+            filter_prs_by_author(p, p->opts[i].value);
+        } else if (strcmp(p->opts[i].key, "--to-review") == 0) {
+            filter_open_prs(p);
+            filter_prs_to_review(p);
+        }
+    }
 }
 
 static void filter_open_prs(struct Prompt *p) {

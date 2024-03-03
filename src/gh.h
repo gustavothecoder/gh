@@ -10,7 +10,8 @@
 #define DEFAULT_CMD 1
 #define REPO_CMD 1
 #define HELP_CMD 2
-#define PR_CMD 3
+#define PULLS_CMD 3
+#define NEWPR_CMD 4
 
 #define FIREFOX_INSTRUCTOR 1
 #define TERM_INSTRUCTOR 2
