@@ -166,12 +166,22 @@ static void test_newpr_instruction_generation(void **state) {
 
     struct Prompt newpr_without_options = { NEWPR_CMD };
 
+    struct Prompt newpr_with_dest_src_option = { NEWPR_CMD };
+    strcpy(newpr_with_dest_src_option.opts[0].key, "--dest-src");
+    strcpy(newpr_with_dest_src_option.opts[0].value, "main...task/jc-123");
+
     // Act
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&newpr_without_options);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&newpr_with_dest_src_option);
 
     // Assert
     assert_string_equal(newpr_without_options.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/compare");
+    assert_string_equal(
+                        newpr_with_dest_src_option.instruction,
+                        "firefox --new-tab github.com/fakeuser/fakerepo/compare/main...task/jc-123"
+                        );
 }
 
 int main(void) {

@@ -11,6 +11,8 @@ static void filter_open_prs(struct Prompt *p);
 static void filter_closed_prs(struct Prompt *p);
 static void filter_prs_by_author(struct Prompt *p, char *author);
 static void filter_prs_to_review(struct Prompt *p);
+static void handle_newpr_options(struct Prompt *p);
+static void set_destination_and_source(struct Prompt *p, char *dest_src);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -88,6 +90,7 @@ void add_instruction(struct Prompt *prompt) {
 
     if (prompt->opts[0].key[0] != '\0') {
         handle_pulls_options(prompt);
+        handle_newpr_options(prompt);
     }
 }
 
@@ -173,4 +176,19 @@ static void filter_prs_by_author(struct Prompt *p, char *author) {
 
 static void filter_prs_to_review(struct Prompt *p) {
     strcat(p->instruction, "+user-review-requested:@me");
+}
+
+static void handle_newpr_options(struct Prompt *p) {
+    if (p->cmd != NEWPR_CMD) return;
+
+    for (int i = 0; i < MAX_CMD_OPTS; i++) {
+        if (strcmp(p->opts[i].key, "--dest-src") == 0) {
+            set_destination_and_source(p, p->opts[i].value);
+        }
+    }
+}
+
+static void set_destination_and_source(struct Prompt *p, char *dest_src) {
+    strcat(p->instruction, "/");
+    strcat(p->instruction, dest_src);
 }
