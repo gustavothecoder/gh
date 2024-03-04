@@ -25,6 +25,7 @@ struct Prompt {
     int cmd;
     char instruction[MAX_STR_SIZE];
     char error[MAX_STR_SIZE];
+    char warn[MAX_STR_SIZE];
     struct Option opts[MAX_CMD_OPTS];
 };
 

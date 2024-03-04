@@ -13,6 +13,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
+    if (prompt.warn[0] != '\0') printf("%s\n", prompt.warn);
+
+    // TODO: implement the --verbose option
+    // printf("%s\n", prompt.instruction);
     system(prompt.instruction);
     return EXIT_SUCCESS;
 }

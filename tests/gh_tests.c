@@ -83,7 +83,7 @@ static void test_repo_instruction_generation_git_remote(void **state) {
 
     add_instruction(&repo);
 
-    assert_string_equal(repo.instruction, "firefox --new-tab github.com/fakeuser/fakerepo");
+    assert_string_equal(repo.instruction, "firefox --new-tab 'github.com/fakeuser/fakerepo'");
 }
 
 static void test_repo_instruction_generation_https_remote(void **state) {
@@ -95,7 +95,7 @@ static void test_repo_instruction_generation_https_remote(void **state) {
 
     add_instruction(&repo);
 
-    assert_string_equal(repo.instruction, "firefox --new-tab github.com/gustavothecoder/gh");
+    assert_string_equal(repo.instruction, "firefox --new-tab 'github.com/gustavothecoder/gh'");
 }
 
 static void test_repo_instruction_generation_errors(void **state) {
@@ -146,15 +146,15 @@ static void test_pulls_instruction_generation(void **state) {
     add_instruction(&pulls_with_to_review);
 
     // Assert
-    assert_string_equal(pulls_without_options.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr");
-    assert_string_equal(pulls_with_open.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open");
+    assert_string_equal(pulls_without_options.instruction, "firefox --new-tab 'github.com/fakeuser/fakerepo/pulls?q=is:pr'");
+    assert_string_equal(pulls_with_open.instruction, "firefox --new-tab 'github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open'");
     assert_string_equal(
                         pulls_with_author_and_closed.instruction,
-                        "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:closed+author:@me"
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/pulls?q=is:pr+is:closed+author:@me'"
                         );
     assert_string_equal(
                         pulls_with_to_review.instruction,
-                        "firefox --new-tab github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open+user-review-requested:@me"
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/pulls?q=is:pr+is:open+user-review-requested:@me'"
                         );
 }
 
@@ -166,21 +166,37 @@ static void test_newpr_instruction_generation(void **state) {
 
     struct Prompt newpr_without_options = { NEWPR_CMD };
 
-    struct Prompt newpr_with_dest_src_option = { NEWPR_CMD };
-    strcpy(newpr_with_dest_src_option.opts[0].key, "--dest-src");
-    strcpy(newpr_with_dest_src_option.opts[0].value, "main...task/jc-123");
+    struct Prompt newpr_with_options = { NEWPR_CMD };
+    strcpy(newpr_with_options.opts[0].key, "--dest-src");
+    strcpy(newpr_with_options.opts[0].value, "main...task/jc-123");
+    strcpy(newpr_with_options.opts[1].key, "--template");
+    strcpy(newpr_with_options.opts[1].value, "feature.md");
+
+    struct Prompt newpr_with_only_template_option = { NEWPR_CMD };
+    strcpy(newpr_with_only_template_option.opts[0].key, "--template");
+    strcpy(newpr_with_only_template_option.opts[0].value, "bug.md");
 
     // Act
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&newpr_without_options);
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
-    add_instruction(&newpr_with_dest_src_option);
+    add_instruction(&newpr_with_options);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&newpr_with_only_template_option);
 
     // Assert
-    assert_string_equal(newpr_without_options.instruction, "firefox --new-tab github.com/fakeuser/fakerepo/compare");
+    assert_string_equal(newpr_without_options.instruction, "firefox --new-tab 'github.com/fakeuser/fakerepo/compare'");
     assert_string_equal(
-                        newpr_with_dest_src_option.instruction,
-                        "firefox --new-tab github.com/fakeuser/fakerepo/compare/main...task/jc-123"
+                        newpr_with_options.instruction,
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/compare/main...task/jc-123?expand=1&template=feature.md'"
+                        );
+    assert_string_equal(
+                        newpr_with_only_template_option.instruction,
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/compare?expand=1&template=bug.md'"
+                        );
+    assert_string_equal(
+                        newpr_with_only_template_option.warn,
+                        "WARNING: No branches have been selected. Execute `gh help` for more details."
                         );
 }
 

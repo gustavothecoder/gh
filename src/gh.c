@@ -6,6 +6,7 @@ static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
 static void adapt_git_remote_url(char *url);
 static char *generate_firefox_instruction(char *url);
+static void close_firefox_argument(struct Prompt *p);
 static void handle_pulls_options(struct Prompt *p);
 static void filter_open_prs(struct Prompt *p);
 static void filter_closed_prs(struct Prompt *p);
@@ -13,6 +14,9 @@ static void filter_prs_by_author(struct Prompt *p, char *author);
 static void filter_prs_to_review(struct Prompt *p);
 static void handle_newpr_options(struct Prompt *p);
 static void set_destination_and_source(struct Prompt *p, char *dest_src);
+static void set_template(struct Prompt *p, char *template);
+static void assure_query_param_support(struct Prompt *p);
+static void warn_missing_branches(struct Prompt *p);
 
 struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
@@ -92,6 +96,8 @@ void add_instruction(struct Prompt *prompt) {
         handle_pulls_options(prompt);
         handle_newpr_options(prompt);
     }
+
+    close_firefox_argument(prompt);
 }
 
 static int generate_git_remote_url(char *url) {
@@ -138,8 +144,15 @@ static void adapt_git_remote_url(char *url) {
 }
 
 static char *generate_firefox_instruction(char *url) {
-    char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab ";
+    char firefox_bin_cmd[MAX_STR_SIZE] = "firefox --new-tab '";
     return strcat(firefox_bin_cmd, url);
+}
+
+static void close_firefox_argument(struct Prompt *p) {
+    size_t sz = strlen(p->instruction);
+    if (p->instruction[sz - 1] == '\'') return;
+
+    strcat(p->instruction, "'");
 }
 
 static void handle_pulls_options(struct Prompt *p) {
@@ -184,11 +197,34 @@ static void handle_newpr_options(struct Prompt *p) {
     for (int i = 0; i < MAX_CMD_OPTS; i++) {
         if (strcmp(p->opts[i].key, "--dest-src") == 0) {
             set_destination_and_source(p, p->opts[i].value);
+        } else if (strcmp(p->opts[i].key, "--template") == 0) {
+            set_template(p, p->opts[i].value);
         }
     }
+
+    warn_missing_branches(p);
 }
 
 static void set_destination_and_source(struct Prompt *p, char *dest_src) {
     strcat(p->instruction, "/");
     strcat(p->instruction, dest_src);
+}
+
+static void set_template(struct Prompt *p, char *template) {
+    assure_query_param_support(p);
+
+    strcat(p->instruction, "&template=");
+    strcat(p->instruction, template);
+}
+
+static void assure_query_param_support(struct Prompt *p) {
+    if (strstr(p->instruction, "?expand=1") != NULL) return;
+
+    strcat(p->instruction, "?expand=1");
+}
+
+static void warn_missing_branches(struct Prompt *p) {
+    if (strstr(p->instruction, "...") != NULL) return;
+
+    strcpy(p->warn, "WARNING: No branches have been selected. Execute `gh help` for more details.");
 }
