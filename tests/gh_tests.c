@@ -176,6 +176,12 @@ static void test_newpr_instruction_generation(void **state) {
     strcpy(newpr_with_only_template_option.opts[0].key, "--template");
     strcpy(newpr_with_only_template_option.opts[0].value, "bug.md");
 
+    struct Prompt newpr_with_title = { NEWPR_CMD };
+    strcpy(newpr_with_title.opts[0].key, "--title");
+    strcpy(newpr_with_title.opts[0].value, "Add a very nice feature");
+    strcpy(newpr_with_title.opts[1].key, "--dest-src");
+    strcpy(newpr_with_title.opts[1].value, "main...my-nice-feature");
+
     // Act
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&newpr_without_options);
@@ -183,12 +189,15 @@ static void test_newpr_instruction_generation(void **state) {
     add_instruction(&newpr_with_options);
     will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
     add_instruction(&newpr_with_only_template_option);
+    will_return(__wrap_find_git_config, fopen(fake_config_path, "r"));
+    add_instruction(&newpr_with_title);
 
     // Assert
     assert_string_equal(newpr_without_options.instruction, "firefox --new-tab 'github.com/fakeuser/fakerepo/compare'");
     assert_string_equal(
                         newpr_with_options.instruction,
-                        "firefox --new-tab 'github.com/fakeuser/fakerepo/compare/main...task/jc-123?expand=1&template=feature.md'"
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/compare/main...task/jc-123" \
+                        "?expand=1&template=feature.md'"
                         );
     assert_string_equal(
                         newpr_with_only_template_option.instruction,
@@ -197,6 +206,11 @@ static void test_newpr_instruction_generation(void **state) {
     assert_string_equal(
                         newpr_with_only_template_option.warn,
                         "WARNING: No branches have been selected. Execute `gh help` for more details."
+                        );
+    assert_string_equal(
+                        newpr_with_title.instruction,
+                        "firefox --new-tab 'github.com/fakeuser/fakerepo/compare/main...my-nice-feature" \
+                        "?expand=1&title=Add a very nice feature'"
                         );
 }
 

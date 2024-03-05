@@ -15,6 +15,7 @@ static void filter_prs_to_review(struct Prompt *p);
 static void handle_newpr_options(struct Prompt *p);
 static void set_destination_and_source(struct Prompt *p, char *dest_src);
 static void set_template(struct Prompt *p, char *template);
+static void set_title(struct Prompt *p, char *title);
 static void assure_query_param_support(struct Prompt *p);
 static void warn_missing_branches(struct Prompt *p);
 
@@ -199,6 +200,8 @@ static void handle_newpr_options(struct Prompt *p) {
             set_destination_and_source(p, p->opts[i].value);
         } else if (strcmp(p->opts[i].key, "--template") == 0) {
             set_template(p, p->opts[i].value);
+        } else if (strcmp(p->opts[i].key, "--title") == 0) {
+            set_title(p, p->opts[i].value);
         }
     }
 
@@ -206,8 +209,19 @@ static void handle_newpr_options(struct Prompt *p) {
 }
 
 static void set_destination_and_source(struct Prompt *p, char *dest_src) {
-    strcat(p->instruction, "/");
-    strcat(p->instruction, dest_src);
+    char *query_params = memchr(p->instruction, '?', strlen(p->instruction));
+    if (query_params == NULL) {
+        strcat(p->instruction, "/");
+        strcat(p->instruction, dest_src);
+    } else {
+        char dest_src_param[MAX_STR_SIZE];
+        dest_src_param[0] = '/';
+        strcpy(dest_src_param+1, dest_src);
+        size_t query_sz = strlen(query_params);
+        size_t dest_src_sz = strlen(dest_src_param);
+        memmove(query_params+dest_src_sz, query_params, query_sz);
+        strncpy(query_params, dest_src_param, dest_src_sz);
+    }
 }
 
 static void set_template(struct Prompt *p, char *template) {
@@ -215,6 +229,14 @@ static void set_template(struct Prompt *p, char *template) {
 
     strcat(p->instruction, "&template=");
     strcat(p->instruction, template);
+}
+
+// TODO: make `title` URL safe
+static void set_title(struct Prompt *p, char *title) {
+    assure_query_param_support(p);
+
+    strcat(p->instruction, "&title=");
+    strcat(p->instruction, title);
 }
 
 static void assure_query_param_support(struct Prompt *p) {
