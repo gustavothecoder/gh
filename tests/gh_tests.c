@@ -70,6 +70,23 @@ static void test_parsing_prompt_with_newpr_cmd(void **state) {
     assert_int_equal(result.cmd, NEWPR_CMD);
 }
 
+static void test_parsing_prompt_with_spaces(void **state) {
+    int argc = 6;
+    char *fake_argv[argc];
+    fake_argv[0] = "gh";
+    fake_argv[1] = "newpr";
+    fake_argv[2] = "--title=this";
+    fake_argv[3] = "title";
+    fake_argv[4] = "has";
+    fake_argv[5] = "spaces";
+
+    struct Prompt result = parse_prompt(argc, fake_argv);
+
+    assert_int_equal(result.cmd, NEWPR_CMD);
+    assert_string_equal(result.opts[0].key, "--title");
+    assert_string_equal(result.opts[0].value, "this+title+has+spaces");
+}
+
 FILE *__wrap_find_git_config() {
     return (FILE *)mock();
 }
@@ -222,6 +239,7 @@ int main(void) {
         cmocka_unit_test(test_parsing_prompt_with_repo_cmd),
         cmocka_unit_test(test_parsing_prompt_with_pulls_cmd),
         cmocka_unit_test(test_parsing_prompt_with_newpr_cmd),
+        cmocka_unit_test(test_parsing_prompt_with_spaces),
         cmocka_unit_test(test_repo_instruction_generation_git_remote),
         cmocka_unit_test(test_repo_instruction_generation_https_remote),
         cmocka_unit_test(test_repo_instruction_generation_errors),

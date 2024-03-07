@@ -1,6 +1,7 @@
 #include "gh.h"
 
 static int parse_cmd(char *arg[]);
+static int is_a_opt(char *opt);
 static struct Option parse_opt(char *opt);
 static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
@@ -23,17 +24,24 @@ struct Prompt parse_prompt(int argc, char *argv[]) {
     struct Prompt result = { DEFAULT_CMD };
 
     // The first arg will be `gh`, so we can skip it.
-    int opt_i = 0;
+    int opt_i = -1;
     for (int i = 1; i < argc; i++) {
         if (i == 1) {
             result.cmd = parse_cmd(&argv[i]);
-        } else {
-            result.opts[opt_i] = parse_opt(argv[i]);
+        } else if (is_a_opt(argv[i])) {
             opt_i++;
+            result.opts[opt_i] = parse_opt(argv[i]);
+        } else {
+            strcat(result.opts[opt_i].value, "+");
+            strcat(result.opts[opt_i].value, argv[i]);
         }
     }
 
     return result;
+}
+
+static int is_a_opt(char *opt) {
+    return strstr(opt, "--") != NULL;
 }
 
 static int parse_cmd(char *arg[]) {
@@ -231,7 +239,6 @@ static void set_template(struct Prompt *p, char *template) {
     strcat(p->instruction, template);
 }
 
-// TODO: make `title` URL safe
 static void set_title(struct Prompt *p, char *title) {
     assure_query_param_support(p);
 
