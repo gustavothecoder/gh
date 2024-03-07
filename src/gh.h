@@ -6,7 +6,7 @@
 #define MAX_STR_SIZE 255
 
 #define INVALID_CMD -1
-#define MAX_CMD_OPTS 3
+#define MAX_CMD_OPTS 4
 #define DEFAULT_CMD 1
 #define REPO_CMD 1
 #define HELP_CMD 2

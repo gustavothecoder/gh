@@ -17,6 +17,7 @@ static void handle_newpr_options(struct Prompt *p);
 static void set_destination_and_source(struct Prompt *p, char *dest_src);
 static void set_template(struct Prompt *p, char *template);
 static void set_title(struct Prompt *p, char *title);
+static void set_assignees(struct Prompt *p, char *assignees);
 static void assure_query_param_support(struct Prompt *p);
 static void warn_missing_branches(struct Prompt *p);
 
@@ -210,6 +211,8 @@ static void handle_newpr_options(struct Prompt *p) {
             set_template(p, p->opts[i].value);
         } else if (strcmp(p->opts[i].key, "--title") == 0) {
             set_title(p, p->opts[i].value);
+        } else if (strcmp(p->opts[i].key, "--assignees") == 0) {
+            set_assignees(p, p->opts[i].value);
         }
     }
 
@@ -244,6 +247,13 @@ static void set_title(struct Prompt *p, char *title) {
 
     strcat(p->instruction, "&title=");
     strcat(p->instruction, title);
+}
+
+static void set_assignees(struct Prompt *p, char *assignees) {
+    assure_query_param_support(p);
+
+    strcat(p->instruction, "&assignees=");
+    strcat(p->instruction, assignees);
 }
 
 static void assure_query_param_support(struct Prompt *p) {

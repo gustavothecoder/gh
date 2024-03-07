@@ -188,6 +188,8 @@ static void test_newpr_instruction_generation(void **state) {
     strcpy(newpr_with_options.opts[0].value, "main...task/jc-123");
     strcpy(newpr_with_options.opts[1].key, "--template");
     strcpy(newpr_with_options.opts[1].value, "feature.md");
+    strcpy(newpr_with_options.opts[2].key, "--assignees");
+    strcpy(newpr_with_options.opts[2].value, "gustavothecoder");
 
     struct Prompt newpr_with_only_template_option = { NEWPR_CMD };
     strcpy(newpr_with_only_template_option.opts[0].key, "--template");
@@ -214,7 +216,7 @@ static void test_newpr_instruction_generation(void **state) {
     assert_string_equal(
                         newpr_with_options.instruction,
                         "firefox --new-tab 'github.com/fakeuser/fakerepo/compare/main...task/jc-123" \
-                        "?expand=1&template=feature.md'"
+                        "?expand=1&template=feature.md&assignees=gustavothecoder'"
                         );
     assert_string_equal(
                         newpr_with_only_template_option.instruction,
