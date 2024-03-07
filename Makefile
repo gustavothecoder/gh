@@ -1,16 +1,18 @@
 CC = gcc
 CC_FLAGS = -g -o
-GH_PATH=~/.local/bin/gh
-MAN_PATH=~/.local/man/man1/gh.1
+GH_DIR=~/.local/bin
+MAN_DIR=~/.local/man/man1
 
 build_tests:
 	$(CC) $(CC_FLAGS) tests.out ./tests/*.c ./src/gh.c -lcmocka -Wl,--wrap=find_git_config -DTESTING
 install:
-	$(CC) $(CC_FLAGS) $(GH_PATH) ./src/*.c
-	cp ./docs/gh.1 $(MAN_PATH)
-	gzip $(MAN_PATH)
+	mkdir -p $(GH_DIR)
+	mkdir -p $(MAN_DIR)
+	$(CC) $(CC_FLAGS) $(GH_DIR)/gh ./src/*.c
+	cp ./docs/gh.1 $(MAN_DIR)/gh.1
+	gzip $(MAN_DIR)/gh.1
 uninstall:
-	rm -f $(GH_PATH)
-	rm -f $(MAN_PATH).gz
+	rm -f $(GH_DIR)/gh
+	rm -f $(MAN_DIR)/gh.1.gz
 clean:
 	rm -f ./*.out
