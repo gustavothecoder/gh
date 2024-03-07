@@ -1,0 +1,61 @@
+gh(1)													      User commands													    gh(1)
+
+NAME
+       gh - A minimal alternative to GitHub CLI.
+
+DESCRIPTION
+       gh is a CLI that works as an interface to github.com. It requires a browser for that and right now only Firefox is supported.
+
+SYNOPSIS
+       gh [COMMANDS] [OPTIONS]
+
+COMMANDS
+       gh-help
+	      Prints help.
+
+       gh-repo
+	      Open the repository page. When no option is provided, this command is used by default.
+
+       gh-pulls
+	      Open the pull request page of the current repository.
+
+       gh-newpr
+	      Open a pull request for the current repository.
+
+GH-PULLS OPTIONS
+       --open Only list open pull requests.
+
+       --closed
+	      Only list closed pull requests.
+
+       --author=<value>
+	      Filter pull requests by author. `@me` works as an alis to your Github username.
+
+       --to-review
+	      Filter pull requests awaiting review from you.
+
+GH-NEWPR OPTIONS
+       --dest-src=<dest_branch>...<src_branch>
+	      Select the destination branch and the source branch.
+
+       --template=<value>
+	      Select the template to be used in the PR description.
+
+       --title=<value>
+	      Define the PR title.
+
+       --assignees=<value1>,<value2>,<valueN>
+	      Define the PR assignees.
+
+       --labels=<value1>,<value2>,valueN>
+	      Define the PR labels.
+
+FILES
+       ~/.local/bin/gh
+
+       ~/.local/man/man1/gh.1.gz
+
+AUTHOR
+       Gustavo Ribeiro (grdev@tutanota.com)
+
+0.1.0													       07 Mar 2024													    gh(1)

@@ -47,7 +47,7 @@ $ make uninstall
 
 ## Usage
 
-Run `gh help` or read the manpage [right here](./docs/ascii_man).
+Run `gh help` or read the manpage [right here](./docs/text_man).
 
 ## Contributing
 
