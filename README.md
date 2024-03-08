@@ -49,6 +49,25 @@ $ make uninstall
 
 Run `gh help` or read the manpage [right here](./docs/text_man).
 
+## Scripts
+
+You can use gh to create cool scripts, like this one:
+```bash
+bugpr() {
+    current_branch=$(git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/\1/')
+
+    gh newpr \
+       --dest-src=main...$current_branch \
+       --template=bug.md \
+       --assignees=gustavothecoder \
+       --labels=bug,patch \
+       --title="$1"
+}
+
+bugpr "This PR fix a critical bug"
+
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome :)
