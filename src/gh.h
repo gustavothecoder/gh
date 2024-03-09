@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define MAX_STR_SIZE 255
+#define MAX_STR_SIZE 512
 
 #define INVALID_CMD -1
 #define MAX_CMD_OPTS 5
