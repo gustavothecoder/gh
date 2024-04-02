@@ -1,61 +1,37 @@
 #include "gh.h"
 
 static int parse_cmd(char *arg[]);
-static int is_a_opt(char *opt);
-static struct Option parse_opt(char *opt);
 static int generate_git_remote_url(char *url);
 static void find_git_remote_url(FILE *git_config, char *buff);
 static void adapt_git_remote_url(char *url);
 static char *generate_firefox_instruction(char *url);
-static void close_firefox_argument(struct Prompt *p);
-static void handle_pulls_options(struct Prompt *p);
-static void filter_open_prs(struct Prompt *p);
-static void filter_closed_prs(struct Prompt *p);
-static void filter_prs_by_author(struct Prompt *p, char *author);
-static void filter_prs_to_review(struct Prompt *p);
-static void handle_newpr_options(struct Prompt *p);
-static void set_destination_and_source(struct Prompt *p, char *dest_src);
-static void set_template(struct Prompt *p, char *template);
-static void set_title(struct Prompt *p, char *title);
-static void set_assignees(struct Prompt *p, char *assignees);
-static void set_labels(struct Prompt *p, char *labels);
-static void assure_query_param_support(struct Prompt *p);
-static void warn_missing_branches(struct Prompt *p);
+static void close_firefox_argument(struct Context *c);
+static void handle_pulls_options(struct Context *c);
+static void filter_open_prs(struct Context *c);
+static void filter_closed_prs(struct Context *c);
+static void filter_prs_by_author(struct Context *c, char *author);
+static void filter_prs_to_review(struct Context *c);
+static void handle_newpr_options(struct Context *c);
+static void set_destination_and_source(struct Context *c, char *dest_src);
+static void set_template(struct Context *c, char *template);
+static void set_title(struct Context *c, char *title);
+static void set_assignees(struct Context *c, char *assignees);
+static void set_labels(struct Context *c, char *labels);
+static void assure_query_param_support(struct Context *c);
+static void warn_missing_branches(struct Context *c);
 
-struct Prompt parse_prompt(int argc, char *argv[]) {
-    struct Prompt result = { DEFAULT_CMD };
-
-    // The first arg will be `gh`, so we can skip it.
-    int opt_i = -1;
-    for (int i = 1; i < argc; i++) {
-        if (i == 1) {
-            result.cmd = parse_cmd(&argv[i]);
-        } else if (is_a_opt(argv[i])) {
-            opt_i++;
-            result.opts[opt_i] = parse_opt(argv[i]);
-        } else {
-            strcat(result.opts[opt_i].value, "+");
-            strcat(result.opts[opt_i].value, argv[i]);
-        }
-    }
-
-    return result;
-}
-
-static int is_a_opt(char *opt) {
-    return strstr(opt, "--") != NULL;
-}
-
-static int parse_cmd(char *arg[]) {
+int cmd_table(char *cmd_str) {
     int result;
 
-    if (strcmp(*arg, "help") == 0)
+    if (compare_command(cmd_str, "help") ||
+        compare_command(cmd_str, "-h") ||
+        compare_command(cmd_str, "--help"))
         result = HELP_CMD;
-    else if (strcmp(*arg, "repo") == 0)
+    else if (compare_command(cmd_str, "repo"))
         result = REPO_CMD;
-    else if (strcmp(*arg, "pulls") == 0)
+    else if (compare_command(cmd_str, "pulls"))
         result = PULLS_CMD;
-    else if (strcmp(*arg, "newpr") == 0)
+    else if (compare_command(cmd_str, "newpr"))
         result = NEWPR_CMD;
     else
         result = INVALID_CMD;
@@ -63,52 +39,29 @@ static int parse_cmd(char *arg[]) {
     return result;
 }
 
-static struct Option parse_opt(char *opt) {
-    struct Option o;
-
-    char received_opt[MAX_STR_SIZE];
-    strcpy(received_opt, opt);
-    size_t opt_sz = strlen(received_opt);
-
-    char *value_with_sep = memchr(received_opt, '=', opt_sz);
-    if (value_with_sep != NULL) {
-        char *only_value = value_with_sep+1;
-        strcpy(o.value, only_value);
-        char *break_line = memchr(o.value, '\n', strlen(o.value));
-        if (break_line != NULL)
-            memset(break_line, '\0', 1);
-
-        memset(value_with_sep, '\0', 1);
-    }
-
-    strcpy(o.key, received_opt);
-
-    return o;
-}
-
-void add_instruction(struct Prompt *prompt) {
-    if (prompt->cmd == HELP_CMD) {
-        strcpy(prompt->instruction, "man gh");
+void add_instruction(struct Context *context) {
+    if (context->prompt.cmd == HELP_CMD) {
+        strcpy(context->instruction, "man gh");
         return;
     }
 
     char remote_url[MAX_STR_SIZE];
     int success = generate_git_remote_url(remote_url);
     if (!success) {
-        strcpy(prompt->error, "Repository configuration not found.");
+        strcpy(context->error, "Repository configuration not found.");
         return;
     }
-    strcpy(prompt->instruction, generate_firefox_instruction(remote_url));
+    strcpy(context->instruction, generate_firefox_instruction(remote_url));
 
-    if (prompt->cmd == PULLS_CMD) strcat(prompt->instruction, "/pulls?q=is:pr");
-    else if (prompt->cmd == NEWPR_CMD) strcat(prompt->instruction, "/compare");
+    if (context->prompt.cmd == PULLS_CMD) strcat(context->instruction, "/pulls?q=is:pr");
+    else if (context->prompt.cmd == NEWPR_CMD) strcat(context->instruction, "/compare");
 
-    if (prompt->opts[0].key[0] != '\0') {
-        handle_pulls_options(prompt);
-        handle_newpr_options(prompt);
+    if (context->prompt.opts[0].key[0] != '\0') {
+        handle_pulls_options(context);
+        handle_newpr_options(context);
     }
 
-    close_firefox_argument(prompt);
+    close_firefox_argument(context);
 }
 
 static int generate_git_remote_url(char *url) {
@@ -159,74 +112,74 @@ static char *generate_firefox_instruction(char *url) {
     return strcat(firefox_bin_cmd, url);
 }
 
-static void close_firefox_argument(struct Prompt *p) {
-    size_t sz = strlen(p->instruction);
-    if (p->instruction[sz - 1] == '\'') return;
+static void close_firefox_argument(struct Context *c) {
+    size_t sz = strlen(c->instruction);
+    if (c->instruction[sz - 1] == '\'') return;
 
-    strcat(p->instruction, "'");
+    strcat(c->instruction, "'");
 }
 
-static void handle_pulls_options(struct Prompt *p) {
-    if (p->cmd != PULLS_CMD) return;
+static void handle_pulls_options(struct Context *c) {
+    if (c->prompt.cmd != PULLS_CMD) return;
 
     for (int i = 0; i < MAX_CMD_OPTS; i++) {
-        if (strcmp(p->opts[i].key, "--open") == 0) {
-            filter_open_prs(p);
-        } else if (strcmp(p->opts[i].key, "--closed") == 0) {
-            filter_closed_prs(p);
-        } else if (strcmp(p->opts[i].key, "--author") == 0) {
-            filter_prs_by_author(p, p->opts[i].value);
-        } else if (strcmp(p->opts[i].key, "--to-review") == 0) {
-            filter_open_prs(p);
-            filter_prs_to_review(p);
+        if (strcmp(c->prompt.opts[i].key, "--open") == 0) {
+            filter_open_prs(c);
+        } else if (strcmp(c->prompt.opts[i].key, "--closed") == 0) {
+            filter_closed_prs(c);
+        } else if (strcmp(c->prompt.opts[i].key, "--author") == 0) {
+            filter_prs_by_author(c, c->prompt.opts[i].value);
+        } else if (strcmp(c->prompt.opts[i].key, "--to-review") == 0) {
+            filter_open_prs(c);
+            filter_prs_to_review(c);
         }
     }
 }
 
-static void filter_open_prs(struct Prompt *p) {
-    strcat(p->instruction, "+is:open");
+static void filter_open_prs(struct Context *c) {
+    strcat(c->instruction, "+is:open");
 }
 
-static void filter_closed_prs(struct Prompt *p) {
-    strcat(p->instruction, "+is:closed");
+static void filter_closed_prs(struct Context *c) {
+    strcat(c->instruction, "+is:closed");
 }
 
-static void filter_prs_by_author(struct Prompt *p, char *author) {
+static void filter_prs_by_author(struct Context *c, char *author) {
     char author_param[MAX_STR_SIZE];
     strcpy(author_param, "+author:");
     strcat(author_param, author);
-    strcat(p->instruction, author_param);
+    strcat(c->instruction, author_param);
 }
 
-static void filter_prs_to_review(struct Prompt *p) {
-    strcat(p->instruction, "+user-review-requested:@me");
+static void filter_prs_to_review(struct Context *c) {
+    strcat(c->instruction, "+user-review-requested:@me");
 }
 
-static void handle_newpr_options(struct Prompt *p) {
-    if (p->cmd != NEWPR_CMD) return;
+static void handle_newpr_options(struct Context *c) {
+    if (c->prompt.cmd != NEWPR_CMD) return;
 
     for (int i = 0; i < MAX_CMD_OPTS; i++) {
-        if (strcmp(p->opts[i].key, "--dest-src") == 0) {
-            set_destination_and_source(p, p->opts[i].value);
-        } else if (strcmp(p->opts[i].key, "--template") == 0) {
-            set_template(p, p->opts[i].value);
-        } else if (strcmp(p->opts[i].key, "--title") == 0) {
-            set_title(p, p->opts[i].value);
-        } else if (strcmp(p->opts[i].key, "--assignees") == 0) {
-            set_assignees(p, p->opts[i].value);
-        } else if (strcmp(p->opts[i].key, "--labels") == 0) {
-            set_labels(p, p->opts[i].value);
+        if (strcmp(c->prompt.opts[i].key, "--dest-src") == 0) {
+            set_destination_and_source(c, c->prompt.opts[i].value);
+        } else if (strcmp(c->prompt.opts[i].key, "--template") == 0) {
+            set_template(c, c->prompt.opts[i].value);
+        } else if (strcmp(c->prompt.opts[i].key, "--title") == 0) {
+            set_title(c, c->prompt.opts[i].value);
+        } else if (strcmp(c->prompt.opts[i].key, "--assignees") == 0) {
+            set_assignees(c, c->prompt.opts[i].value);
+        } else if (strcmp(c->prompt.opts[i].key, "--labels") == 0) {
+            set_labels(c, c->prompt.opts[i].value);
         }
     }
 
-    warn_missing_branches(p);
+    warn_missing_branches(c);
 }
 
-static void set_destination_and_source(struct Prompt *p, char *dest_src) {
-    char *query_params = memchr(p->instruction, '?', strlen(p->instruction));
+static void set_destination_and_source(struct Context *c, char *dest_src) {
+    char *query_params = memchr(c->instruction, '?', strlen(c->instruction));
     if (query_params == NULL) {
-        strcat(p->instruction, "/");
-        strcat(p->instruction, dest_src);
+        strcat(c->instruction, "/");
+        strcat(c->instruction, dest_src);
     } else {
         char dest_src_param[MAX_STR_SIZE];
         dest_src_param[0] = '/';
@@ -238,42 +191,42 @@ static void set_destination_and_source(struct Prompt *p, char *dest_src) {
     }
 }
 
-static void set_template(struct Prompt *p, char *template) {
-    assure_query_param_support(p);
+static void set_template(struct Context *c, char *template) {
+    assure_query_param_support(c);
 
-    strcat(p->instruction, "&template=");
-    strcat(p->instruction, template);
+    strcat(c->instruction, "&template=");
+    strcat(c->instruction, template);
 }
 
-static void set_title(struct Prompt *p, char *title) {
-    assure_query_param_support(p);
+static void set_title(struct Context *c, char *title) {
+    assure_query_param_support(c);
 
-    strcat(p->instruction, "&title=");
-    strcat(p->instruction, title);
+    strcat(c->instruction, "&title=");
+    strcat(c->instruction, title);
 }
 
-static void set_assignees(struct Prompt *p, char *assignees) {
-    assure_query_param_support(p);
+static void set_assignees(struct Context *c, char *assignees) {
+    assure_query_param_support(c);
 
-    strcat(p->instruction, "&assignees=");
-    strcat(p->instruction, assignees);
+    strcat(c->instruction, "&assignees=");
+    strcat(c->instruction, assignees);
 }
 
-static void set_labels(struct Prompt *p, char *labels) {
-    assure_query_param_support(p);
+static void set_labels(struct Context *c, char *labels) {
+    assure_query_param_support(c);
 
-    strcat(p->instruction, "&labels=");
-    strcat(p->instruction, labels);
+    strcat(c->instruction, "&labels=");
+    strcat(c->instruction, labels);
 }
 
-static void assure_query_param_support(struct Prompt *p) {
-    if (strstr(p->instruction, "?expand=1") != NULL) return;
+static void assure_query_param_support(struct Context *c) {
+    if (strstr(c->instruction, "?expand=1") != NULL) return;
 
-    strcat(p->instruction, "?expand=1");
+    strcat(c->instruction, "?expand=1");
 }
 
-static void warn_missing_branches(struct Prompt *p) {
-    if (strstr(p->instruction, "...") != NULL) return;
+static void warn_missing_branches(struct Context *c) {
+    if (strstr(c->instruction, "...") != NULL) return;
 
-    strcpy(p->warn, "WARNING: No branches have been selected. Execute `gh help` for more details.");
+    strcpy(c->warn, "WARNING: No branches have been selected. Execute `gh help` for more details.");
 }
