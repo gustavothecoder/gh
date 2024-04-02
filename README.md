@@ -31,6 +31,8 @@ $ gh newpr --dest-src=main..my-branch \
 
 You need to be able to compile C code. Installing `build-essential` for Debian-based distros or `base-devel` for Arch-based distros should be sufficient.
 
+`gh` uses [libprompt](https://github.com/gustavothecoder/libprompt) to handle CLI prompts, so you need to install it.
+
 Right now FireFox is a dependency too.
 
 ### Steps
